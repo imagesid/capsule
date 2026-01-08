@@ -1829,7 +1829,7 @@ static void preAssignment(cache_t *cache, const request_t *req, int scheme) {
         if(sekali){
             sekali=false;
             avg_clean_gap = compute_avg_gap_without_outliers(objids, num_objid) * 4;
-            printf("Cleaned avg LBA gap: %.2f %d\n", avg_clean_gap, req->obj_id); 
+            // printf("Cleaned avg LBA gap: %.2f %d\n", avg_clean_gap, req->obj_id); 
             
             if(avg_clean_gap < epsilons[0]){
                 sparse= false; 
@@ -1842,12 +1842,12 @@ static void preAssignment(cache_t *cache, const request_t *req, int scheme) {
                 //     }
                     
                 // }
-                printf("%" PRIu64 "\n",   objids[0]);
-                printf("%" PRIu64 "\n",   objids[1]);
+                // printf("%" PRIu64 "\n",   objids[0]);
+                // printf("%" PRIu64 "\n",   objids[1]);
                 if (avg_clean_gap > 0 &&
                     !(objids[0] > LBA_THRESHOLD && objids[1] > LBA_THRESHOLD)) {
                     billion_type = false;
-                    printf("Not billion type\n");
+                    // printf("Not billion type\n");
                 }
 
             }
@@ -1859,7 +1859,7 @@ static void preAssignment(cache_t *cache, const request_t *req, int scheme) {
             //if (gap_2dp == 0) {
                 //enable_prefetching = false;
                 has_spatial = false;
-                printf(" %.2f\n", avg_clean_gap);
+                // printf(" %.2f\n", avg_clean_gap);
             } else {
                 //enable_prefetching = true;
             } 
