@@ -542,18 +542,18 @@ if (mkdir(dir, 0755) == -1) {
 char filepath[256];
   snprintf(filepath, sizeof(filepath), "/dev/shm/prefetched%d.txt", cache->log);
 
-  FILE *fp = fopen(filepath, "r");
-  if (fp == NULL) {
-      perror("Failed to open file for reading");
-      // return;
-  }
+  // FILE *fp = fopen(filepath, "r");
+  // if (fp == NULL) {
+  //     perror("Failed to open file for reading");
+  //     // return;
+  // }
 
-  char buffer[512];
-  while (fgets(buffer, sizeof(buffer), fp) != NULL) {
-      printf("Prefetched: %s\n", buffer);  // buffer already includes newline if present
-  }
+  // char buffer[512];
+  // while (fgets(buffer, sizeof(buffer), fp) != NULL) {
+  //     printf("Prefetched: %s\n", buffer);  // buffer already includes newline if present
+  // }
 
-  fclose(fp);
+  // fclose(fp);
 }
 
 
