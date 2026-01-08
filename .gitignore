@@ -1,0 +1,72 @@
+# 1a1a11a
+__pycache__
+*deprecated*
+*.DS_Store*
+*.bak
+*.clean
+*.nogit*
+*_build*
+build
+.idea
+example/cacheSimulatorC/cmake-build-debug
+.vscode/*
+*.log
+fig/
+# Chaos
+sftp-config.json
+# Ignore log files
+_log_msr/*.txt
+logs/
+*.cachesim
+
+# Ignore common log files
+*.log
+
+# Ignore build artifacts (adjust based on your build system)
+build/
+dist/
+*.o
+*.out
+*.class
+*.pyc
+*.exe
+*.dll
+*.so
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore IDE/project files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore temporary files
+*.tmp
+*.bak
+*.~*
+
+# Ignore Git LFS pointer files (optional, if not using LFS anymore)
+*.lfs
+_log_msr/*.txt
+_log_msr/*.txt
+_log_msr/*.txt
+test/run_ali.py
+test/plot-ali.py
+tow*.txt
+tot*.txt
+cek.txt
+base_lba*
+id.bucket_id,
+id.eps_idx,
+active
+eps_idx
+neg_count,
+next
+pos_count,
+*.csv
+total_size
+data/
+heaptrack*

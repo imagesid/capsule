@@ -1,0 +1,393 @@
+=================
+  IOBlazer 1.01
+=================
+
+
+1. Licensing Terms and Conditions
+----------------------------------
+
+Copyright (c) 2008-2010 VMware, Inc. All Rights Reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+
+2. Change Log
+-------------
+
+Date      Ver.  Description
+---------------------------------------------------------------------------
+1/19/11   1.01  Some minor improvements:
+                - Added configurable IO alignment
+                - Increased the robustness of the trace file parser in the
+                  face of spurious lines
+                - Increased the robustness of the build process by automati-
+                  cally detecting target OS and arch within the Makefile
+                - In the Windows version, changed the raw access mode from
+                  volume to physical drive to avoid unnecessary mount/un-
+                  mount operations at every test run.
+
+1/10/11   1.0   Initial release
+
+
+3. Overview
+-----------
+
+   IOBlazer is a multi-platform storage stack micro-benchmark. IOBlazer runs
+on Linux, Windows and OSX and it is capable of generating a highly customizable
+workload.  Parameters like IO size and pattern, burstiness (number of outstan-
+ding IOs), burst inter-arrival time, read vs. write mix, buffered vs. direct
+IO, etc., can be configured independently. IOBlazer is also capable of playing
+back VSCSI traces captured using vscsiStats. The performance metrics reported
+are throughput (in terms of both IOPS and bytes/s) and IO latency.
+
+IOBlazer evolved from a minimalist MS SQL Server emulator which focused solely
+on the IO component of said workload. The original tool had limited capabili-
+ties as it was able to generate a very specific workload based on the MS SQL
+Server IO model (Asynchronous, Un-buffered, Gather/Scatter).  IOBlazer has now
+a far more generic IO model, but two limitations still remain: (1) the align-
+ment of memory accesses on 4 KB boundaries (i.e., a memory page), and (2) the
+alignment of disk accesses on 512 B boundaries (i.e., a disk sector).  Both
+limitations are required by the gather/scatter and un-buffered IO models.
+
+A very useful new feature is the capability to playback VSCSI traces captured
+on VMware ESX through the vscsiStats utility.  This allows IOBlazer to gene-
+rate a synthetic workload absolutely identical to the disk activity of a
+Virtual Machine, ensuring 100% experiment repeatability.
+
+
+4. Building IOBlazer
+--------------------
+
+The following are prerequisites that need satisfied in order to successfully
+build IOBlazer on various platforms.
+
+a) Linux
+
+IOBlazer requires the AIO (Asynchronous I/O) library to be installed on Linux
+systems.  On Fedora this can be accomplished as follows on 32-bit systems:
+
+$ sudo yum intall libaio.i686 libaio-devel.i686
+
+or as follows on 64-bit systems:
+
+$ sudo yum install libaio.x86_64 libaio-devel.x86_64
+
+
+b) Windows
+
+On Windows getopt.[c,h] are required to build IOBlazer. They are available here:
+
+http://www.pwilson.net/getopt.html
+
+
+Once the prerequisites above are satisfied, IOBlazer can be built as follows:
+
+a) Linux / OSX:
+
+$ make
+
+
+b) Windows
+
+In Visual Studio create a new IOBlazer Project and add ioblazer.c and
+getopt.[c,h] to the project's Source and Header Files.  Then build the project
+ by hitting F7.
+
+
+5. Using IOBlazer
+-----------------
+
+The following is the "help" message printed out by IOblazer.  Each of the
+options is explained in detail below.
+
+
+C:> IOBlazer.exe -h
+
+IOBlazer, the ultimate IO benchmark :D
+
+
+usage: ioblazer [options]
+
+        Options      Description                                  Default
+
+        -a <s|r>     IO access pattern: sequential or random      r
+        -b <size>    Memory buffer size in MB                     1 MB
+        -B           Buffered IOs (go thru FS buffer cache)       0
+        -c           Computes pseudo-checksum on data             0
+        -d <path>    Device or File path                          d:\tmp
+        -f <size>    File  or Device size in MB                   1 MB
+        -F           Fill the test file before starting IOs       0
+        -g <gap>     Inter-burst time in microseconds (Avg)       0 us
+        -G <f|u>     Inter-burst time pattern (fixed or uniform)  f
+        -h           Print this message
+        -i <size>    IO size in B (Avg)                           8192 B
+        -I <f|u|b>   IO size pattern (fixed, uniform or bimodal)  f
+        -l <thresh>  Latency Alarm Threshold in ms                5000 ms
+        -o <#OIOs>   Burst size [aka Otstanding IOs] (Avg)        32
+        -O <f|u>     Burst size (fixed or uniform)                f
+        -p <c|f|z>   Printout format: csv, free, csv no header    f
+        -P <file>    Playback VSCSI trace from 'file'             NULL
+        -r <ratio>   Read ratio (1.0 = 100% read)                 1.0
+        -R           Raw Device Access                            0
+        -t <time>    Test duration in s                           180 s
+        -w <num>     Number of worker threads                     1
+
+
+ * -a: Controls the IO access pattern which can be either random or sequential.
+
+ * -b: Specifies the size of the memory buffer used as a source for writes and
+       as a target for reads.
+
+ * -B: Controls whether the IOs are buffered (i.e., go through the file system
+       buffer cache) or direct.
+
+ * -c: Computes a pseudo-checksum on data before writing them to disk or as
+       soon as they are read from disk. This is emulates the processing compo-
+       nent of a IO intensive workload. When the checksum option is specified
+       all data transits through the processor cache.
+
+ * -d: Specifies the device or test file path. The path has different formats
+       depending on the platform:
+       o Windows:
+          + <drive>:\path\to\file for file-level access,
+            where <drive> is a letter in [d, z] (e.g., d:\tmp)
+          + \\.\PhisicalDrive<x> for raw device access,
+            where <x> is a number in [1, 9] (e.g., \\.\PhysicalDrive1)
+       o Linux:
+          + /path/to/file<x> for file-level access,
+            where <x> is a number in [0, 9] (e.g., /mnt/dsk0)
+          + /dev/sd<y> for raw disk access,
+            where <y> is a letter in [b, z] (e.g., /dev/sdb)
+       o OSX:
+          + /path/to/file<x> for file-level access,
+            where <x> is a number in [0, 9] (e.g., /Volumes/disk0)
+          + /dev/disk<x> for raw disk access,
+            where <x> is a number in [1, 9] (e.g., /dev/disk1)
+
+ * -f: Size of the test file or size of the portion of the raw device covered
+       by the test.
+
+ * -F: Fill the test file with random data before initiating the IOs. By
+       default the test file is created if it does not exist, but it is not
+       filled.
+
+ * -g: Burst inter-arrival time in microseconds. This is a mean time if the
+       -G option specifies a uniform distribution.
+
+ * -G: Specifies whether the burst inter-arrival time is fixed or uniformly
+       distributed with a mean time specified by the -g option.
+
+ * -i: IO size in bytes. This is a mean size if the -I option specifies a
+       uniform distribution.
+
+ * -I: Specifies weather the IO size is fixed or uniformly distributed with a
+       mean size specified by the -i option, or it's distributed according a
+       bi-modal distribution. In the latter case, the "small" size is 8 KB
+       irrespective of the IO type (read or write), while the "large" size is
+       128 KB for writes and 1 MB for reads. The probability of large IOs is
+       0.01. These values were derived by the observation of the MS SQL Server
+       IO behavior.
+
+ * -l: Specifies a threshold in milliseconds which causes an alert message to
+       be printed out if the latency of the last IO exceeded such threshold.
+
+ * -o: Burst size in number of IOs. This parameter is also known as Outstanding
+       IOs. The burst size is a mean value if the -O option specifies a uniform
+       distribution.
+
+ * -O: Specifies whether the burst size is a fixed value or uniformly
+       distributed with a mean value specified by the -o option.
+
+ * -p: Specifies the printout format:
+       o Free format (as shown in the examples below)
+       o Comma Separated Values (CSV), useful for post-processing in with
+         spreadsheet applications
+       o CSV without header, useful for creating tables by appending results
+         of subsequent experiments to an existing CSV file
+
+ * -P: Playback a VSCSI trace captured using vscsiStats.
+
+ * -r: Read ratio, i.e., fraction of the read IOs over the total number of IOs
+       generated (1.0 = 100% read).
+
+ * -R: Specifies whether the IOs are performed directly to a device rather
+       than a file.
+
+ * -t: Test duration in seconds.
+
+ * -w: Number of worker threads instantiated. Each thread performs IOs
+       independently of the others on it's own file/device.
+
+
+6. Examples
+-----------
+
+In the following example, IOblazer runs on Windows and performs IOs according
+to the default test parameters on two raw devices, namely \\.\PhysicalDrive1 and
+\\.\PhysicalDrive2.
+
+C:\Users\Administrator\Desktop>IOBlazer.exe -t 10 -d \\.\PhysicalDrive1 -R -w 2
+
+IOBlazer, the ultimate IO benchmark :D
+
+Test parameters:
+        Test duration            = 10 s
+        Worker threads           = 2
+        File/Device path(s)      = \\.\PhysicalDrive1, \\.\PhysicalDrive2
+        File/Device size         = 1 MB
+        Buffer size              = 1 MB
+        IO access pattern        = r
+        IO size (Avg)            = 8192 B
+        IO size pattern          = f
+        Burst size (OIOs, Avg)   = 32
+        Burst size pattern       = f
+        Inter-burst time (Avg)   = 0 us
+        Inter-burst time pattern = f
+        Read ratio               = 1.0
+        Latency threshold        = 5000 ms
+        Buffered IO              = 0
+        Checksum                 = 0
+        Raw Device Access        = 1
+        Fill file                = 0
+        Trace file               =
+
+Running test for 10 seconds...
+Test complete.
+
+Test duration   =       10.001 s
+Total IOs       =   388288         Total Bytes =   3169104896
+IOPS            =    38825         Byte/s      =    316878802 (302.2 MB/s)
+Average latency =      779.764 us  Max Latency =        11000 us
+Long IOs        =        0
+
+
+In the following example, IOBlazer runs on Linux and performs buffered IOs on
+a test file. In this case the IO spec causes IOBlazer to generate burst of 8
+reads with an average inter-arrival time of 10 ms.
+
+vmware@vmware src> ./ioblazer -a r -t 10 -r 1 -o 8  -g 10000 -G u -B
+
+IOBlazer, the ultimate IO benchmark :D
+
+Test parameters:
+	Test duration            = 10 s
+	Worker threads           = 1
+	File/Device path(s)      = /mnt/dsk0,
+	File/Device size         = 1 MB
+	Buffer size              = 1 MB
+	IO access pattern        = r
+	IO size (Avg)            = 8192 B
+	IO size pattern          = f
+	Burst size (OIOs, Avg)   = 8
+	Burst size pattern       = f
+	Inter-burst time (Avg)   = 10000 us
+	Inter-burst time pattern = u
+	Read ratio               = 1.0
+	Latency threshold        = 5000 ms
+	Buffered IO              = 1
+	Checksum                 = 0
+	Raw Device Access        = 0
+	Fill file                = 0
+	Trace file               =
+
+Running test for 10 seconds...
+Test complete.
+
+Test duration   =       10.013 s
+Total IOs       =     7888	   Total Bytes =     64370688
+IOPS            =      788	   Byte/s      =      6428711 (6.1 MB/s)
+Average latency =       35.044 us  Max Latency =          112 us
+Long IOs        =        0
+
+
+In the following example, IOBlazer runs on Linux and plays back a VSCSI trace
+captured from a Windows Server 2008 VM that was running Exchange Server 2007.
+
+vmware@vmware src> ./ioblazer -P exchange.trc
+
+IOBlazer, the ultimate IO benchmark :D
+
+Warning: Trace Playback mode enabled. IO Spec parameters will be ignored.
+Test parameters:
+	Test duration            = 180 s
+	Worker threads           = 1
+	File/Device path(s)      = /mnt/dsk0,
+	File/Device size         = 1 MB
+	Buffer size              = 1 MB
+	IO access pattern        = r
+	IO size (Avg)            = 8192 B
+	IO size pattern          = f
+	Burst size (OIOs, Avg)   = 1
+	Burst size pattern       = f
+	Inter-burst time (Avg)   = 0 us
+	Inter-burst time pattern = f
+	Read ratio               = 1.0
+	Latency threshold        = 5000 ms
+	Buffered IO              = 0
+	Checksum                 = 0
+	Raw Device Access        = 0
+	Fill file                = 0
+	Trace file               = exchange.trc
+
+Playing back trace file...
+Playing back IO#    400
+Test duration   =       21.869 s
+Total IOs       =      462	   Total Bytes =      5967872
+IOPS            =       21	   Byte/s      =       272892 (0.3 MB/s)
+Average latency =      167.656 us  Max Latency =         7771 us
+Long IOs        =        0
+
+
+In the following example, IOBlazer runs on a Mac and performs a number of
+single, unbuffered, and random reads with the goal of measuring the average
+disk read latency, which turns out to be about 7 ms.
+
+vmware@vmware src> ./ioblazer -a r -t 10 -r 1 -o 1 -d /tmp/disk0 -f 3000
+
+IOBlazer, the ultimate IO benchmark :D
+
+Test parameters:
+	Test duration            = 10 s
+	Worker threads           = 1
+	File/Device path(s)      = /tmp/disk0,
+	File/Device size         = 3000 MB
+	Buffer size              = 1 MB
+	IO access pattern        = r
+	IO size (Avg)            = 8192 B
+	IO size pattern          = f
+	Burst size (OIOs, Avg)   = 1
+	Burst size pattern       = f
+	Inter-burst time (Avg)   = 0 us
+	Inter-burst time pattern = f
+	Read ratio               = 1.0
+	Latency threshold        = 5000 ms
+	Buffered IO              = 0
+	Checksum                 = 0
+	Raw Device Access        = 0
+	Fill file                = 0
+	Trace file               =
+
+Running test for 10 seconds...
+Test complete.
+
+Test duration   =       10.004 s
+Total IOs       =     1457	   Total Bytes =     11935744
+IOPS            =      146	   Byte/s      =      1193097 (1.1 MB/s)
+Average latency =     6862.959 us  Max Latency =       174950 us
+Long IOs        =        0
